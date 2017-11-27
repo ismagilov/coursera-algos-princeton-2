@@ -26,14 +26,14 @@ public class SAP {
     public int length(Iterable<Integer> v, Iterable<Integer> w) {
         SapData sap = findSap(v, w);
 
-        return sap != null ? sap.length : -1;
+        return sap.length;
     }
 
     // a common ancestor that participates in shortest ancestral path; -1 if no such path
     public int ancestor(Iterable<Integer> v, Iterable<Integer> w) {
         SapData sap = findSap(v, w);
 
-        return sap != null ? sap.ancestor : -1;
+        return sap.ancestor;
     }
 
     private SapData findSap(Iterable<Integer> vv1, Iterable<Integer> vv2) {
@@ -45,7 +45,7 @@ public class SAP {
         for (Integer v : vv2)
             validateVertex(v);
 
-        SapData sap = null;
+        SapData sap = new SapData();
 
         int dist1 = 0, dist2 = 0;
 
@@ -60,53 +60,45 @@ public class SAP {
             q2.offer(v);
 
         while (!q1.isEmpty() || !q2.isEmpty()) {
-            Queue<Integer> nq1 = new ArrayDeque<>();
-            Queue<Integer> nq2 = new ArrayDeque<>();
-
-            while (!q1.isEmpty()) {
-                Integer cur = q1.poll();
-                if (visited1.containsKey(cur))
-                    continue;
-                else
-                   visited1.put(cur, dist1);
-
-                if (visited2.containsKey(cur)) {
-                    int length = dist1 + visited2.get(cur);
-                    if (sap == null || length < sap.length)
-                        sap = new SapData(length, cur);
-                }
-
-                for (Integer v : g.adj(cur))
-                    nq1.offer(v);
-            }
+            Queue<Integer> nq1 = findPathsIntersection(sap, q1, dist1, visited1, visited2);
             if (!nq1.isEmpty())
                 dist1++;
-            if (null == sap || dist1 < sap.length)
+            if (sap.isEmpty() || dist1 < sap.length)
                 q1 = nq1;
 
-            while (!q2.isEmpty()) {
-                Integer cur = q2.poll();
-                if (visited2.containsKey(cur))
-                    continue;
-                else
-                    visited2.put(cur, dist2);
-
-                if (visited1.containsKey(cur)) {
-                    int length = dist2 + visited1.get(cur);
-                    if (sap == null || length < sap.length)
-                        sap = new SapData(length, cur);
-                }
-
-                for (Integer v : g.adj(cur))
-                    nq2.offer(v);
-            }
+            Queue<Integer> nq2 = findPathsIntersection(sap, q2, dist2, visited2, visited1);
             if (!nq2.isEmpty())
                 dist2++;
-            if (null == sap || dist2 < sap.length)
+            if (sap.isEmpty() || dist2 < sap.length)
                 q2 = nq2;
         }
 
         return sap;
+    }
+
+    private Queue<Integer> findPathsIntersection(SapData sap, Queue<Integer> q, int dist, HashMap<Integer, Integer> visited, HashMap<Integer, Integer> visitedByOtherSearch) {
+        Queue<Integer> next = new ArrayDeque<>();
+
+        while (!q.isEmpty()) {
+            Integer cur = q.poll();
+            if (visited.containsKey(cur))
+                continue;
+            else
+                visited.put(cur, dist);
+
+            if (visitedByOtherSearch.containsKey(cur)) {
+                int length = dist + visitedByOtherSearch.get(cur);
+                if (sap.isEmpty() || length < sap.length) {
+                    sap.length = length;
+                    sap.ancestor = cur;
+                }
+            }
+
+            for (Integer v : g.adj(cur))
+                next.offer(v);
+        }
+
+        return next;
     }
 
     private void validateVertex(int v) {
@@ -116,12 +108,20 @@ public class SAP {
 
 
     private static final class SapData {
-        private final int length;
-        private final int ancestor;
+        private int length;
+        private int ancestor;
+
+        public SapData() {
+            this(-1, -1);
+        }
 
         public SapData(int length, int ancestor) {
             this.length = length;
             this.ancestor = ancestor;
+        }
+
+        public boolean isEmpty() {
+            return length == -1 && ancestor == -1;
         }
     }
 
