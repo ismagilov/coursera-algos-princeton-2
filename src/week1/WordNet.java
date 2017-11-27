@@ -18,46 +18,13 @@ public class WordNet {
         if (null == synsets) throw new IllegalArgumentException("Synsets file name is null");
         if (null == hypernyms) throw new IllegalArgumentException("Hypernyms file name is null");
 
-        In inSyn = new In(synsets);
-        String[] lines = inSyn.readAllLines();
-        for (String line : lines) {
-            String[] parts = line.split(",");
-            int id = Integer.parseInt(parts[0]);
-            String synset = parts[1];
-            synsetsMap.put(id, synset);
+        importSynsets(synsets);
 
-            String[] nouns = synset.split(" ");
-            for (String noun : nouns) {
-                Set<Integer> ids = nounsMap.getOrDefault(noun, new HashSet<>());
-                ids.add(id);
-                nounsMap.put(noun, ids);
-            }
-        }
-
-        In inHyp = new In(hypernyms);
-        lines = inHyp.readAllLines();
         g = new Digraph(synsetsMap.size());
+        importHypernyms(hypernyms, g);
 
-        for (String line : lines) {
-            String[] ids = line.split(",");
-            for (int i = 1; i < ids.length; i++)
-                g.addEdge(Integer.parseInt(ids[0]), Integer.parseInt(ids[i]));
-        }
-
+        validateDigraph(g);
         sap = new SAP(g);
-
-        DirectedCycle cycle = new DirectedCycle(g);
-        if (cycle.hasCycle())
-            throw new IllegalArgumentException("Graph has cycle");
-
-        int rootsCounter = 0;
-        for (int v = 0; v < g.V(); v++) {
-            if (0 == g.outdegree(v)) {
-                rootsCounter++;
-                if (rootsCounter > 1)
-                    throw new IllegalArgumentException("Graph has more then one root");
-            }
-        }
     }
 
     // returns all WordNet nouns
@@ -89,6 +56,49 @@ public class WordNet {
         int ancestor = sap.ancestor(nounsMap.get(nounA), nounsMap.get(nounB));
 
         return synsetsMap.get(ancestor);
+    }
+
+    private void importSynsets(String synsets) {
+        In inSyn = new In(synsets);
+        String[] lines = inSyn.readAllLines();
+        for (String line : lines) {
+            String[] parts = line.split(",");
+            int id = Integer.parseInt(parts[0]);
+            String synset = parts[1];
+            synsetsMap.put(id, synset);
+
+            String[] nouns = synset.split(" ");
+            for (String noun : nouns) {
+                Set<Integer> ids = nounsMap.getOrDefault(noun, new HashSet<>());
+                ids.add(id);
+                nounsMap.put(noun, ids);
+            }
+        }
+    }
+
+    private void importHypernyms(String hypernyms, Digraph g) {
+        In inHyp = new In(hypernyms);
+        String[] lines = inHyp.readAllLines();
+        for (String line : lines) {
+            String[] ids = line.split(",");
+            for (int i = 1; i < ids.length; i++)
+                g.addEdge(Integer.parseInt(ids[0]), Integer.parseInt(ids[i]));
+        }
+    }
+
+    private void validateDigraph(Digraph g) {
+        DirectedCycle cycle = new DirectedCycle(g);
+        if (cycle.hasCycle())
+            throw new IllegalArgumentException("Graph has cycle");
+
+        int rootsCounter = 0;
+        for (int v = 0; v < g.V(); v++) {
+            if (0 == g.outdegree(v)) {
+                rootsCounter++;
+                if (rootsCounter > 1)
+                    throw new IllegalArgumentException("Graph has more then one root");
+            }
+        }
     }
 
     // do unit testing of this class
