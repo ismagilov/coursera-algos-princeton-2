@@ -50,7 +50,7 @@ public class SeamCarver {
 
     // energy of pixel at column x and row y
     public double energy(int x, int y) {
-        if (x < 0 || x > width) throw new IllegalArgumentException("x is out of range [0; " + (width - 1) + "]");
+        if (x < 0 || x > width - 1) throw new IllegalArgumentException("x is out of range [0; " + (width - 1) + "]");
         if (y < 0 || y > height - 1) throw new IllegalArgumentException("y is out of range [0; " + (height - 1) + "]");
 
         return energy[y][x];
