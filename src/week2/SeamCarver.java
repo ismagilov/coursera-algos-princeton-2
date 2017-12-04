@@ -209,10 +209,6 @@ public class SeamCarver {
             }
         }
 
-//        System.out.println("DP energy:");
-//        for (int r = 0; r < height; r++)
-//            System.out.println(Arrays.toString(de[r]));
-
         for (int r = height - 1, c = colWithMin; r >= 0; c = dp[r][c], r--)
             path[r] = c;
 
@@ -241,14 +237,14 @@ public class SeamCarver {
                 r++;
             }
         }
+        height--;
 
         for(int c = 0; c < width; c++) {
-            energy[seam[c]][c] = calculateEnergy(seam[c], c);
+            if (seam[c] < height)
+                energy[seam[c]][c] = calculateEnergy(seam[c], c);
             if (seam[c] - 1 >= 0)
                 energy[seam[c] - 1][c] = calculateEnergy(seam[c] - 1, c);
         }
-
-        height--;
     }
 
     // remove vertical seam from current picture
@@ -264,9 +260,6 @@ public class SeamCarver {
                 throw new IllegalArgumentException("vertical seam is broken");
         }
 
-//        System.out.println("before");
-//        for (int r = 0; r < height; r++)
-//            System.out.println(Arrays.toString(colors[r]));
         for (int r = 0; r < seam.length; r++) {
             int c = seam[r];
 
@@ -276,17 +269,13 @@ public class SeamCarver {
                 c++;
             }
         }
-//        System.out.println("after");
-//        for (int r = 0; r < height; r++)
-//            System.out.println(Arrays.toString(colors[r]));
-
+        width--;
 
         for(int r = 0; r < height; r++) {
-            energy[r][seam[r]] = calculateEnergy(r, seam[r]);
+            if (seam[r] < width)
+                energy[r][seam[r]] = calculateEnergy(r, seam[r]);
             if (seam[r] - 1 >= 0)
                 energy[r][seam[r] - 1] = calculateEnergy(r,seam[r] - 1);
         }
-
-        width--;
     }
 }
