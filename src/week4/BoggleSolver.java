@@ -1,7 +1,7 @@
 import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.StdOut;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 
 public class BoggleSolver {
     private BoogleTrie trie;
@@ -14,50 +14,46 @@ public class BoggleSolver {
 
     // Returns the set of all valid words in the given Boggle board, as an Iterable.
     public Iterable<String> getAllValidWords(BoggleBoard board) {
-        ArrayList<String> res = new ArrayList<>();
+        HashSet<String> res = new HashSet<>();
 
         int rows = board.rows();
         int cols = board.cols();
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                searchWord(board, r, c, trie.getRoot(), new boolean[rows * cols]);
-            }
-        }
 
+        for (int r = 0; r < rows; r++)
+            for (int c = 0; c < cols; c++)
+                searchWord(board, r, c, trie.getRoot(), new boolean[rows * cols], "", res);
 
         return res;
     }
 
-    private void searchWord(BoggleBoard board, int r, int c, TrieNode node, boolean[] visited) {
+    private void searchWord(BoggleBoard board, int r, int c, TrieNode node, boolean[] visited, String prefix, HashSet<String> res) {
         int[][] dirs = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
 
-        visited[r * board.cols() + c] = true;
-
-        //TODO: Terminates:
-        //- All visited
-        //- Next letter is not found
-
-        //TODO Valid word must have at least 3 letters
-
-        //TODO If Q, next must be U
-
-        //TODO: Add found word: node has child (r, c) and it is leaf
-
-        //TODO Append letter before recursion, delete after, or use "prefix + next"
-
-        TrieNode child = node.getChild(board.getLetter(r, c));
+        char ch = board.getLetter(r, c);
+        TrieNode child = node.getChild(ch);
         if (null == child)
             return;
 
-        int rows = board.rows();
-        int cols = board.cols();
+        prefix = prefix + ch;
+        if (ch == 'Q') {
+            child = child.getChild('U');
+            if (null == child)
+                return;
 
+            prefix = prefix + 'U';
+        }
+
+        if (prefix.length() >= 3 && child.isLeaf())
+            res.add(prefix);
+
+        visited[r * board.cols() + c] = true;
         for (int i = 0; i < dirs.length; i++) {
             int nr = r + dirs[i][0], nc = c + dirs[i][1];
 
             if (isInsideBoard(board, nr, nc) && !visited[nr * board.cols() + nc])
-                searchWord(board, nr, nc, child, visited);
+                searchWord(board, nr, nc, child, visited, prefix, res);
         }
+        visited[r * board.cols() + c] = false;
     }
 
     private boolean isInsideBoard(BoggleBoard board, int nr, int nc) {
@@ -70,12 +66,28 @@ public class BoggleSolver {
     // Returns the score of the given word if it is in the dictionary, zero otherwise.
     // (You can assume the word contains only the uppercase letters A through Z.)
     public int scoreOf(String word) {
-        return 0;
+        if (!trie.contains(word))
+            return 0;
+
+        int lng = word.length();
+        if (lng <= 2)
+            return  0;
+        else if (3 <= lng && lng <= 4)
+            return 1;
+        else if (lng == 5)
+            return 2;
+        else if (lng == 6)
+            return 3;
+        else if (lng == 7)
+            return 5;
+        else
+            return 11;
     }
 
     public static void main(String[] args) {
         In in = new In(args[0]);
         String[] dictionary = in.readAllStrings();
+
         BoggleSolver solver = new BoggleSolver(dictionary);
         BoggleBoard board = new BoggleBoard(args[1]);
 
@@ -100,6 +112,18 @@ class BoogleTrie {
 
     public TrieNode getRoot() {
         return root;
+    }
+
+    public boolean contains(String word) {
+        TrieNode cur = root;
+        for (int i = 0; i < word.length(); i++) {
+            cur = cur.getChild(word.charAt(i));
+
+            if (cur == null)
+                return false;
+        }
+
+        return cur.isLeaf();
     }
 
     private void addWord(String word) {
