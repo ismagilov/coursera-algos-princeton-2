@@ -13,56 +13,57 @@ public class BoggleSolver {
     }
 
     // Returns the set of all valid words in the given Boggle board, as an Iterable.
-    public Iterable<String> getAllValidWords(BoggleBoard board) {
+    public Iterable<String> getAllValidWords(BoggleBoard boggleBoard) {
         HashSet<String> res = new HashSet<>();
 
-        int rows = board.rows();
-        int cols = board.cols();
+        int rows = boggleBoard.rows();
+        int cols = boggleBoard.cols();
+
+        char[] board = new char[rows * cols];
 
         for (int r = 0; r < rows; r++)
             for (int c = 0; c < cols; c++)
-                searchWord(board, r, c, trie.getRoot(), new boolean[rows * cols], new StringBuilder(), res);
+                board[r * cols + c] = boggleBoard.getLetter(r, c);
+
+        for (int r = 0; r < rows; r++)
+            for (int c = 0; c < cols; c++)
+                searchWord(board, rows, cols, r, c, trie.getRoot(), new boolean[rows * cols], res);
 
         return res;
     }
 
-    //TODO: save words in TrieNodes, get rid of prefix
-    //TODO: use 1D arrays instead if board
-    private void searchWord(BoggleBoard board, int r, int c, TrieNode node, boolean[] visited, StringBuilder prefix, HashSet<String> res) {
-        int[][] dirs = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
+    private void searchWord(char[] board, int rows, int cols, int r, int c, TrieNode node, boolean[] visited, HashSet<String> res) {
+        int idx = r * cols + c;
+        char ch = board[idx];
 
-        char ch = board.getLetter(r, c);
         TrieNode child = node.getChild(ch);
         if (null == child)
             return;
 
-        prefix.append(ch);
         if (ch == 'Q') {
             child = child.getChild('U');
             if (null == child)
                 return;
-
-            prefix.append('U');
         }
 
-        if (prefix.length() >= 3 && child.isLeaf())
-            res.add(prefix.toString());
+        if (null != child.getValue() && child.getValue().length() >= 3)
+            res.add(child.getValue());
 
-        visited[r * board.cols() + c] = true;
-        int initialSize = prefix.length();
+        visited[idx] = true;
+
+        int[][] dirs = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
         for (int i = 0; i < dirs.length; i++) {
             int nr = r + dirs[i][0], nc = c + dirs[i][1];
 
-            if (isInsideBoard(board, nr, nc) && !visited[nr * board.cols() + nc]) {
-                searchWord(board, nr, nc, child, visited, prefix, res);
-                prefix.delete(initialSize, prefix.length());
-            }
+            if (isInsideBoard(rows, cols, nr, nc) && !visited[nr * cols + nc])
+                searchWord(board, rows, cols, nr, nc, child, visited, res);
         }
-        visited[r * board.cols() + c] = false;
+
+        visited[idx] = false;
     }
 
-    private boolean isInsideBoard(BoggleBoard board, int nr, int nc) {
-        if (nr >= 0 && nr < board.rows() && nc >= 0 && nc < board.cols())
+    private boolean isInsideBoard(int rows, int cols, int nr, int nc) {
+        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols)
             return true;
         else
             return false;
@@ -128,7 +129,7 @@ class BoogleTrie {
                 return false;
         }
 
-        return cur.isLeaf();
+        return null != cur.getValue() && cur.getValue().equals(word);
     }
 
     private void addWord(String word) {
@@ -140,12 +141,12 @@ class BoogleTrie {
 
             TrieNode child = cur.getChild(ch);
             if (child == null) {
-                child = new TrieNode(ch);
+                child = new TrieNode();
                 cur.setChild(ch, child);
             }
 
             if (i == word.length() - 1)
-                child.setLeaf();
+                child.setValue(word);
 
             cur = child;
         }
@@ -154,16 +155,9 @@ class BoogleTrie {
 
 class TrieNode {
     private TrieNode[] children = new TrieNode[26];
-    private char character;
-    private boolean leaf;
+    private String value;
 
     public TrieNode() {
-    }
-
-    public TrieNode(char character) {
-        this();
-
-        this.character = character;
     }
 
     public TrieNode getChild(char ch) {
@@ -174,15 +168,11 @@ class TrieNode {
         children[ch - 'A'] = node;
     }
 
-    public void setLeaf() {
-        leaf = true;
+    public void setValue(String v) {
+        value = v;
     }
 
-    public boolean isLeaf() {
-        return  leaf;
-    }
-
-    public char getCharacter() {
-        return character;
+    public String getValue() {
+        return value;
     }
 }
