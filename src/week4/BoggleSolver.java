@@ -21,12 +21,14 @@ public class BoggleSolver {
 
         for (int r = 0; r < rows; r++)
             for (int c = 0; c < cols; c++)
-                searchWord(board, r, c, trie.getRoot(), new boolean[rows * cols], "", res);
+                searchWord(board, r, c, trie.getRoot(), new boolean[rows * cols], new StringBuilder(), res);
 
         return res;
     }
 
-    private void searchWord(BoggleBoard board, int r, int c, TrieNode node, boolean[] visited, String prefix, HashSet<String> res) {
+    //TODO: save words in TrieNodes, get rid of prefix
+    //TODO: use 1D arrays instead if board
+    private void searchWord(BoggleBoard board, int r, int c, TrieNode node, boolean[] visited, StringBuilder prefix, HashSet<String> res) {
         int[][] dirs = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
 
         char ch = board.getLetter(r, c);
@@ -34,24 +36,27 @@ public class BoggleSolver {
         if (null == child)
             return;
 
-        prefix = prefix + ch;
+        prefix.append(ch);
         if (ch == 'Q') {
             child = child.getChild('U');
             if (null == child)
                 return;
 
-            prefix = prefix + 'U';
+            prefix.append('U');
         }
 
         if (prefix.length() >= 3 && child.isLeaf())
-            res.add(prefix);
+            res.add(prefix.toString());
 
         visited[r * board.cols() + c] = true;
+        int initialSize = prefix.length();
         for (int i = 0; i < dirs.length; i++) {
             int nr = r + dirs[i][0], nc = c + dirs[i][1];
 
-            if (isInsideBoard(board, nr, nc) && !visited[nr * board.cols() + nc])
+            if (isInsideBoard(board, nr, nc) && !visited[nr * board.cols() + nc]) {
                 searchWord(board, nr, nc, child, visited, prefix, res);
+                prefix.delete(initialSize, prefix.length());
+            }
         }
         visited[r * board.cols() + c] = false;
     }
