@@ -37,7 +37,9 @@ public class CircularSuffixArray {
     }
 }
 
-
+/**
+ * Taken and modified from here: https://algs4.cs.princeton.edu/code/edu/princeton/cs/algs4/Quick3string.java.html
+ */
 class Quick3string {
     private static final int CUTOFF =  15;   // cutoff to insertion sort
 
